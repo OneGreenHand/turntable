@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--大转盘-->
+    <declare-styleable name="LuckPan">
+        <attr name="LPColor1" format="reference|color" />
+        <attr name="LPColor2" format="reference|color" />
+        <attr name="LPColor3" format="reference|color" />
+        <attr name="LPTextColor" format="reference|color" />
+        <attr name="LPTextSize" format="integer" />
+    </declare-styleable>
+    <!--转盘背景-->
+    <declare-styleable name="LuckPanLayot">
+        <attr name="LPLBgColor" format="reference|color" />
+        <attr name="LPLColor1" format="reference|color" />
+        <attr name="LPLColor2" format="reference|color" />
+    </declare-styleable>
+</resources>

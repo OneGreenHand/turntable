@@ -2,6 +2,8 @@ package com.ogh.turntable;
 
 import android.content.Context;
 import android.content.res.Resources;
+import android.content.res.TypedArray;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -19,8 +21,8 @@ import java.util.List;
 public class LuckPanLayout extends RelativeLayout {
 
     private Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private Paint whitePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private Paint yellowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Paint onePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Paint twoPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private int radius;
     private int CircleX, CircleY;
     private Canvas canvas;
@@ -30,6 +32,9 @@ public class LuckPanLayout extends RelativeLayout {
     private ImageView startBtn;
     private int screenWidth, screeHeight;
     private int MinValue;
+    private int bgColor = getResources().getColor(R.color.bgColor);
+    private int color1 = Color.WHITE;
+    private int color2 = getResources().getColor(R.color.color1);
     /**
      * LuckPan 中间对应的Button必须设置tag为 startbtn.
      */
@@ -38,23 +43,30 @@ public class LuckPanLayout extends RelativeLayout {
 
     public LuckPanLayout(Context context) {
         super(context);
-        initView();
+        initView(context,null);
     }
 
     public LuckPanLayout(Context context, AttributeSet attrs) {
         super(context, attrs);
-        initView();
+        initView(context,attrs);
     }
 
     public LuckPanLayout(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        initView();
+        initView(context,attrs);
     }
 
-    private void initView() {
-        backgroundPaint.setColor(Color.parseColor("#F0F2F5"));
-        whitePaint.setColor(Color.WHITE);
-        yellowPaint.setColor(Color.parseColor("#60A2EB"));
+    private void initView(Context context,AttributeSet attrs) {
+        if (attrs != null) {
+            TypedArray array = context.obtainStyledAttributes(attrs, R.styleable.LuckPan);
+            bgColor = array.getColor(R.styleable.LuckPanLayot_LPLBgColor, getResources().getColor(R.color.bgColor));
+            color1 = array.getColor(R.styleable.LuckPanLayot_LPLColor1, Color.WHITE);
+            color2 = array.getColor(R.styleable.LuckPanLayot_LPLColor1, getResources().getColor(R.color.color1));
+            array.recycle();
+        }
+        backgroundPaint.setColor(bgColor);
+        onePaint.setColor(color1);
+        twoPaint.setColor(color2);
         screeHeight = getResources().getDisplayMetrics().heightPixels;
         screenWidth = getResources().getDisplayMetrics().widthPixels;
         startLuckLight();
@@ -109,7 +121,6 @@ public class LuckPanLayout extends RelativeLayout {
                 }
             }
         }
-
         if (!panReady)
             throw new RuntimeException("Have you add RotatePan in LuckPanLayout element ?");
     }
@@ -120,9 +131,9 @@ public class LuckPanLayout extends RelativeLayout {
             int x = (int) (pointDistance * Math.sin((i * Math.PI / 180))) + CircleX;
             int y = (int) (pointDistance * Math.cos((i * Math.PI / 180))) + CircleY;
             if (FirstYellow)
-                canvas.drawCircle(x, y, dp2px(4), yellowPaint);
+                canvas.drawCircle(x, y, dp2px(4), twoPaint);
             else
-                canvas.drawCircle(x, y, dp2px(4), whitePaint);
+                canvas.drawCircle(x, y, dp2px(4), onePaint);
             FirstYellow = !FirstYellow;
         }
     }
@@ -144,8 +155,12 @@ public class LuckPanLayout extends RelativeLayout {
         setStartBtnEnable(false);
     }
 
-    public List<String> getDatas() {
-        return rotatePan.getDatas();
+    public List<String> getNames() {
+        return rotatePan.getNames();
+    }
+
+    public List<Bitmap> getImgs() {
+        return rotatePan.getImgs();
     }
 
     protected void setStartBtnEnable(boolean enable) {

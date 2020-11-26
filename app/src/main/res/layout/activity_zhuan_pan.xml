@@ -5,12 +5,6 @@
     android:gravity="center"
     android:orientation="vertical">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="30dp"
-        android:text="下一步计划：加入图片显示,可动态添加" />
-
     <com.ogh.turntable.LuckPanLayout
         android:id="@+id/luckpan_layout"
         android:layout_width="wrap_content"

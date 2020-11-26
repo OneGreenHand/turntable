@@ -5,6 +5,8 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.Resources;
+import android.content.res.TypedArray;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -32,38 +34,53 @@ public class RotatePan extends View {
     private int radius;
     private int verPanRadius;
     private int diffRadius;
+    private int color1 = getResources().getColor(R.color.color1);
+    private int color2 = getResources().getColor(R.color.color2);
+    private int color3 = getResources().getColor(R.color.color3);//转盘数量为奇数时有效
+    private int textColor = Color.WHITE;
+    private int textSize = 16;
     private List<String> mNames = new ArrayList<>();//转盘内容
+    private List<Bitmap> mBitmaps = new ArrayList<>();//转盘图片
     private int panNum;//转盘总个数
     private int screenWidth, screeHeight;
     private static final long ONE_WHEEL_TIME = 500;//旋转一圈所需要的时间
 
     public RotatePan(Context context) {
         super(context);
-        initView(context);
+        initView(context, null);
     }
 
     public RotatePan(Context context, AttributeSet attrs) {
         super(context, attrs);
-        initView(context);
+        initView(context, attrs);
     }
 
     public RotatePan(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        initView(context);
+        initView(context, attrs);
     }
 
-    private void initView(Context context) {
+    private void initView(Context context, AttributeSet attrs) {
         initData();
+        if (attrs != null) {
+            TypedArray array = context.obtainStyledAttributes(attrs, R.styleable.LuckPan);
+            color1 = array.getColor(R.styleable.LuckPan_LPColor1, getResources().getColor(R.color.color1));
+            color2 = array.getColor(R.styleable.LuckPan_LPColor2, getResources().getColor(R.color.color2));
+            color3 = array.getColor(R.styleable.LuckPan_LPColor3, getResources().getColor(R.color.color3));
+            textColor = array.getColor(R.styleable.LuckPan_LPTextColor, Color.WHITE);
+            textSize = array.getInteger(R.styleable.LuckPan_LPTextSize, 16);
+            array.recycle();
+        }
         screeHeight = getResources().getDisplayMetrics().heightPixels;
         screenWidth = getResources().getDisplayMetrics().widthPixels;
         InitAngle = 360 / panNum;
         verPanRadius = 360 / panNum;
         diffRadius = verPanRadius / 2;
-        onePaint.setColor(Color.parseColor("#FE645A"));
-        twoPaint.setColor(Color.parseColor("#169C2D"));
-        threePaint.setColor(Color.parseColor("#FEB043"));
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(dp2px(16));
+        onePaint.setColor(color1);
+        twoPaint.setColor(color2);
+        threePaint.setColor(color3);
+        textPaint.setColor(textColor);
+        textPaint.setTextSize(dp2px(textSize));
         setClickable(true);
     }
 
@@ -123,25 +140,36 @@ public class RotatePan extends View {
                 }
             }
         }
-        for (int i = 0; i < panNum; i++) {
+        for (int i = 0; i < mBitmaps.size(); i++) {//绘制图片
+            drawIcon(width / 2, height / 2, radius, (panNum % 4 == 0) ? InitAngle + diffRadius : InitAngle, i, canvas);
+            InitAngle += verPanRadius;
+        }
+        for (int i = 0; i < mNames.size(); i++) {//绘制文字
             drawText((panNum % 4 == 0) ? InitAngle + diffRadius + (diffRadius * 3 / 4) : InitAngle + diffRadius, mNames.get(i), 2 * radius, textPaint, canvas, rectF);
             InitAngle += verPanRadius;
         }
+    }
+
+    private void drawIcon(int xx, int yy, int mRadius, float startAngle, int i, Canvas mCanvas) {
+        int imgWidth = mRadius / 4;
+        float angle = (float) Math.toRadians(verPanRadius + startAngle);
+        float x = (float) (xx + (mRadius / 2 + mRadius / 12) * Math.cos(angle));   //确定图片在圆弧中 中心点的位置
+        float y = (float) (yy + (mRadius / 2 + mRadius / 12) * Math.sin(angle));
+        RectF rect = new RectF(x - imgWidth * 2 / 3, y - imgWidth * 2 / 3, x + imgWidth * 2 / 3, y + imgWidth * 2 / 3);  // 确定绘制图片的位置
+        mCanvas.drawBitmap(mBitmaps.get(i), null, rect, null);
     }
 
     private void drawText(float startAngle, String string, int mRadius, Paint mTextPaint, Canvas mCanvas, RectF mRange) {
         Path path = new Path();
         path.addArc(mRange, startAngle, verPanRadius);
         float textWidth = mTextPaint.measureText(string);
-        //圆弧的水平偏移
-        float hOffset = (panNum % 4 == 0) ? ((float) (mRadius * Math.PI / panNum / 2)) : ((float) (mRadius * Math.PI / panNum / 2 - textWidth / 2));
-        //圆弧的垂直偏移
-        float vOffset = mRadius / 2 / 6;
+        float hOffset = (panNum % 4 == 0) ? ((float) (mRadius * Math.PI / panNum / 2)) : ((float) (mRadius * Math.PI / panNum / 2 - textWidth / 2)); //圆弧的水平偏移
+        float vOffset = mRadius / 2 / 6;//圆弧的垂直偏移
         mCanvas.drawTextOnPath(string, path, hOffset, vOffset, mTextPaint);
     }
 
     /**
-     * 初始化数据,防止不写数据闪退问题
+     * 初始化数据,防止不写数据闪退
      */
     private void initData() {
         mNames.add("牛扒");
@@ -156,14 +184,40 @@ public class RotatePan extends View {
     }
 
     /**
-     * 设置数据源
+     * 设置数据
      */
-    public void setDatas(List<String> names) {
+    public void setNames(List<String> names) {
         if (names == null || names.isEmpty())
+            return;
+        this.panNum = names.size();
+        this.mBitmaps.clear();
+        this.mNames.clear();
+        this.mNames.addAll(names);
+        calculation();
+    }
+
+    public void setImgs(List<Bitmap> imgs) {
+        if (imgs == null || imgs.isEmpty())
+            return;
+        this.panNum = imgs.size();
+        this.mNames.clear();
+        this.mBitmaps.clear();
+        this.mBitmaps.addAll(imgs);
+        calculation();
+    }
+
+    public void setDatas(List<String> names, List<Bitmap> imgs) {
+        if (names == null || names.isEmpty() || imgs == null || imgs.isEmpty() || imgs.size() != names.size())
             return;
         this.panNum = names.size();
         this.mNames.clear();
         this.mNames.addAll(names);
+        this.mBitmaps.clear();
+        this.mBitmaps.addAll(imgs);
+        calculation();
+    }
+
+    private void calculation() {
         InitAngle = 360 / panNum;
         verPanRadius = 360 / panNum;
         diffRadius = verPanRadius / 2;
@@ -173,8 +227,12 @@ public class RotatePan extends View {
     /**
      * 获取数据源
      */
-    public List<String> getDatas() {
+    public List<String> getNames() {
         return mNames;
+    }
+
+    public List<Bitmap> getImgs() {
+        return mBitmaps;
     }
 
     /**
@@ -183,10 +241,8 @@ public class RotatePan extends View {
      * @param pos 如果 pos = -1 则随机，如果指定某个值，则转到某个指定区域
      */
     protected void startRotate(int pos) {
-        //Rotate lap.
-        int lap = (int) (Math.random() * 12) + 4;
-        //Rotate angle.
-        int angle = 0;
+        int lap = (int) (Math.random() * 12) + 4;  //Rotate lap.
+        int angle = 0; //Rotate angle.
         if (pos < 0) {
             angle = (int) (Math.random() * 360);
         } else {
